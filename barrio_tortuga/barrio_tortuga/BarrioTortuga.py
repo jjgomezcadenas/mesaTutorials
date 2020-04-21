@@ -40,6 +40,23 @@ class PrtLvl(Enum):
     Detailed = 3
     Verbose  = 4
 
+
+def print_level(prtl, PRT):
+    if prtl.value >= PRT.value:
+        return True
+    else:
+        return False
+
+
+prtl =PrtLvl.Concise
+
+
+def is_house(map_bt, x, y):
+    if map_bt[x,y] == 1:
+        return True
+    else:
+        return False
+
 ### AGENTS
 
 class Patch(Agent):
@@ -74,6 +91,29 @@ class Turtle(Agent):
         else:
             return False
 
+    def avoid_turtle(self):
+        atry =  np.random.random_sample() # check awareness
+        if atry < self.model.avoid_awareness:
+            return True
+        else:
+            return False
+
+
+    def socialize_turtle(self):
+        atry =  np.random.random_sample() # check awareness
+        if atry < self.model.social_affinity:
+            return True
+        else:
+            return False
+
+
+    def filled_with_turtles(self, cell):
+        turtles = [obj for obj in cell if isinstance(obj, Turtle)]
+        if len(turtles) > 0:
+            return True
+        else:
+            return False
+
     def move(self):
         # Get neighborhood
         neighbors = [i for i in self.model.grid.get_neighborhood(self.pos, self.moore,
@@ -85,8 +125,34 @@ class Turtle(Agent):
             if self.check_if_in_street(pos):
                 allowed_neighbors.append(pos)
 
-        self.random.shuffle(allowed_neighbors)
-        self.model.grid.move_agent(self, allowed_neighbors[0])
+        selected_neighbors = []
+
+        if self.model.social_affinity == 0:  # just move at random
+            selected_neighbors = allowed_neighbors
+        elif self.model.social_affinity > 0:  # Try to move into an occupied cell if you can
+            for pos in allowed_neighbors:
+                n_cell = self.model.grid.get_cell_list_contents([pos])
+                if self.filled_with_turtles(n_cell) == True:
+                    if self.socialize_turtle() == True:  # pass test
+                        selected_neighbors.append(pos)   # select spot as candidate
+
+            if len(selected_neighbors) == 0:  # no spot with another turtle
+                selected_neighbors = allowed_neighbors # thus move at random to available
+
+        elif self.model.social_affinity < 0:  # Try to avoid occupied cells if you can
+            for pos in allowed_neighbors:
+                n_cell = self.model.grid.get_cell_list_contents([pos])
+                if self.filled_with_turtles(n_cell) == True:
+                    if self.avoid_turtle() == False:  # failed avoiding turtle
+                        selected_neighbors.append(pos)
+                else:
+                    selected_neighbors.append(pos) # this one is void, OK
+
+            if len(selected_neighbors) == 0:  # no spot are voids
+                selected_neighbors = allowed_neighbors # thus move at random to available
+
+        self.random.shuffle(selected_neighbors)
+        self.model.grid.move_agent(self, selected_neighbors[0])
 
 
     def step(self):
@@ -94,15 +160,6 @@ class Turtle(Agent):
 
 
 # MODEL
-
-prtl =PrtLvl.Concise
-
-def print_level(prtl, PRT):
-    if prtl.value >= PRT.value:
-        return True
-    else:
-        return False
-
 def number_of_encounters(model):
     nc = 0
     for y in range(model.grid.height):
@@ -134,17 +191,26 @@ def number_of_turtles_in_neighborhood(model):
 
 class BarrioTortuga(Model):
     '''
-    A neighborhood where people goes out of their homes, walk around at random and meet other people.
+    A neighborhood where turtles goes out of their homes, walk around at random
+    and meet other turtles.
+
     '''
 
-    def __init__(self, map_file="barrio-tortuga-map-dense.txt", turtles=250, nd=1, prtl=PrtLvl.Detailed):
+    def __init__(self,
+                 map_file="barrio-tortuga-map-dense.txt",
+                 turtles=250,
+                 social_affinity = 0.,
+                 nd=2,
+                 prtl=PrtLvl.Detailed):
         '''
         Create a new Barrio Tortuga.
 
         The barrio is created from a map. It is a toroidal object thus moore is always True
         The barrio is fille with turtles that can exist the buildings through a set of doors.
         There are many doors in the building. This is meant to represent the temporal spread in
-        the turtles coming in and out of the buildings. In a real building persons go out by the same
+        the turtles coming in and out of the buildings.
+
+        In a real building persons go out by the same
         door at different times. In Barrio Tortugas, turtles go out of the buildings through a set
         of doors. Each turtle chooses a door to go out at random. This is equivalent to introduce
         randomness on the exit time.
@@ -152,14 +218,27 @@ class BarrioTortuga(Model):
         Args:
             The  name file with the barrio map
             number of turtles in the barrio
+            social_affinity a parameter that sets the social affinity of turtles. It takes
+            values between -1 and 1. For positive values (0, 1), turtles seek contact with
+            other turtles. For negative values (-1, 0), turtles avoid contact with others.
+            A value of social_affinity of 1 means that a turtle that finds another turhtle nearby
+            always moves to its cell. A social affinity of -1 means that a turtle always tries
+            to avoid any turtle nearby.
             nd, a parameter that decides the number of doors (largest for nd=1)
         '''
 
         # read the map
         self.map_bt                 = np.genfromtxt(map_file)
+        self.social_affinity        = social_affinity
+        self.avoid_awareness        = -social_affinity
 
         if print_level(prtl, PrtLvl.Concise):
             print(f'loaded barrio tortuga map with dimensions ->{ self.map_bt.shape}')
+            if self.social_affinity >= 0:
+                print(f'social affinity ->{ self.social_affinity}')
+            else:
+                print(f'avoid awareness ->{ self.avoid_awareness}')
+
 
         self.height, self.width     = self.map_bt.shape
         self.grid                   = MultiGrid(self.height, self.width, torus=True)
@@ -187,7 +266,7 @@ class BarrioTortuga(Model):
         if print_level(prtl, PrtLvl.Concise):
             print(f'number of doors = {n_doors}')
 
-        for i in range(self.turtles):
+        for i in range(int(self.turtles)):
             n = self.random.randrange(n_doors)  # choose the door
             d = doors[n]
             x=  d[0]
@@ -199,8 +278,6 @@ class BarrioTortuga(Model):
 
             self.schedule.add(a)               # add to scheduler
             self.grid.place_agent(a, (x, y))   # place Turtle in the grid
-
-
         self.running = True
 
         # activate data collector
@@ -210,86 +287,11 @@ class BarrioTortuga(Model):
         self.schedule.step()
         self.datacollector.collect(self)
 
-    def get_doors(self, n=1):
+
+    def get_doors(self, nd):
+        l,w = self.map_bt.shape
         D = []
-        for j in range (0,7):
-            pdl = np.array((10, 5 + j * 15))
-            pdr = np.array((14, 5 + j *15))
-            print(f' raw = {j}, pdl ={pdl}, pdr = {pdr}')
-            R0DL = [pdl + i * np.array((15,0)) for i in range(0,6)]
-            R0DR = [pdr + i * np.array((15,0)) for i in range(0,6)]
-            print('doors')
-            print(R0DL)
-            print(R0DR)
-            for r in R0DL:
-                D.append(r)
-            for r in R0DR:
-                D.append(r)
-        return D#
-#     def get_doors(self, n=1):
-#     D = []
-#     for x in range(0,31,n):
-#         D.append((x,30))
-#         D.append((30,x))
-#         D.append((49,x))
-#         D.append((x,49))
-#         D.append((80,x))
-#         D.append((x,80))
-#
-#     for x in range(51,81,n):
-#         D.append((x,30))
-#         D.append((x,49))
-#         D.append((x,80))
-#
-#     for x in range(49,81,n):
-#         D.append((30,x))
-#         D.append((49,x))
-#
-#     # for x in range(81,99,n):
-#     #     D.append((x,49))
-#     return D
-
-
-class WalkingAgent(Agent):
-    '''
-    Class implementing a turtle that can move at random
-
-    Not indended to be used on its own, but to inherit its methods to multiple
-    other agents.
-
-    '''
-
-    def __init__(self, unique_id, pos, model, moore=True):
-        '''
-        grid: The MultiGrid object in which the agent lives.
-        x: The agent's current x coordinate
-        y: The agent's current y coordinate
-        moore: If True, may move in all 8 directions.
-                Otherwise, only up, down, left, right.
-        '''
-        super().__init__(unique_id, model)
-        self.pos = pos
-        self.moore = moore
-
-    def random_move(self):
-        '''
-        Step one cell in any allowable direction.
-        We use grid’s built-in get_neighborhood method, which returns all the neighbors of a given cell.
-        This method can get two types of cell neighborhoods: Moore (including diagonals),
-        and Von Neumann (only up/down/left/right).
-        It also needs an argument as to whether to include the center cell itself as one of the neighbors.
-        '''
-        # Pick the next cell from the adjacent cells.
-        next_moves = self.model.grid.get_neighborhood(self.pos, self.moore, True)
-        next_move = self.random.choice(next_moves)
-        # Now move:
-        self.model.grid.move_agent(self, next_move)
-
-
-class RandomTurtle(WalkingAgent):
-    '''
-    Agent which only walks around.
-    '''
-
-    def step(self):
-        self.random_move()
+        if nd == 1:
+            return [(x,y) for x in range(l) for y in range(w) if is_house(self.map_bt, x, y) == False and is_house(self.map_bt, x, y-1) == True]
+        else:
+            return [(x,y) for x in range(l) for y in range(w) if is_house(self.map_bt, x, y) == False and is_house(self.map_bt, x-1, y-1) == True]

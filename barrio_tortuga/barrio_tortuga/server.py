@@ -35,8 +35,9 @@ canvas_element = CanvasGrid(turtle_portrayal, 100, 100, 1000, 1000)
 chart          = ChartModule([{"Label": 'NumberOfEncounters', "Color": "#0000FF"}]
 )
 
-model_params = {"turtles": UserSettableParameter('slider', 'turtles', 100, 10, 500)}
-
+model_params = {"turtles": UserSettableParameter('slider', 'turtles', 100, 10, 500),
+                "social_affinity" : UserSettableParameter('slider', 'avoid_awareness', 0.,
+                -1., 1., 0.1)}
 
 server = ModularServer(BarrioTortuga, [canvas_element, chart], "Barrio Tortuga", model_params)
 server.port = 8521
