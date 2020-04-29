@@ -42,8 +42,7 @@ model_params = {"turtles": UserSettableParameter('slider', 'turtles', 1000, 100,
                 "i0" : UserSettableParameter('slider', 'i0', 10, 1, 100, 5),
                 "r0" : UserSettableParameter('slider', 'r0', 3.5, 0.5, 10.5, 0.5),
                 "ti" : UserSettableParameter('slider', 'ti', 5, 1, 20, 1),
-                "tr" : UserSettableParameter('slider', 'tr', 5, 1, 20, 1),
-                "nc" : UserSettableParameter('slider', 'tr', 2.36, 1, 20, 0.1)}
+                "tr" : UserSettableParameter('slider', 'tr', 5, 1, 20, 1)}
 
 
 server = ModularServer(BarrioTortugaSEIR, [canvas_element, chart], "Barrio Tortuga SEIR",
