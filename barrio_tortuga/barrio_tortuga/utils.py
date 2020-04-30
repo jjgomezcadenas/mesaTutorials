@@ -42,9 +42,16 @@ def get_files(path, F=True, S=False):
 
     for f in FLS:
         fk, fkl = get_file_type(f)
-        FND[f'{fk}:{fkl}'] = f
+        if fk=='PZ':
+            FND['PZ'] = f
+        else:
+            FND[f'{fk}:{fkl}'] = f
 
     for key, value in FND.items():
-        DFD[key] = pd.read_csv(value, sep=' ')
+        if key == 'PZ':
+            ds = pd.read_csv(value, header=None, squeeze=True, index_col=0)
+            DFD[key] = ds
+        else:
+            DFD[key] = pd.read_csv(value, sep=' ')
 
     return FND, DFD

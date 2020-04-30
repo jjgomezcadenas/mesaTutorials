@@ -24,7 +24,7 @@ def c19_nbinom_pdf(r0, k, x):
     return nbinom.pmf(x, n, p)
 
 
-def c19_nbinom_rvs(r0, k, size=10):
+def c19_nbinom_rvs(r0, k, size=0):
     """Generates random variates"""
     n, p = c19_nbinom_transform(r0, k)
 
@@ -35,9 +35,13 @@ def c19_nbinom_rvs(r0, k, size=10):
     return r
 
 
-def weib_pdf(x,n,a):
+def weib_pdf2(x,n,a):
     """Weibull distribution PDF with shape a and scale n"""
     return (a / n) * (x / n)**(a - 1) * np.exp(-(x / n)**a)
+
+def weib_pdf(x,shape,scale):
+    """Weibull distribution PDF with shape a and scale n"""
+    return weibull_min(x, shape, scale=scale)
 
 
 def c19_weib_rvs(mu, rms, size=10):
