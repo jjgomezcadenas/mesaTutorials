@@ -23,6 +23,8 @@ def r0_series(DFD, tmax=25, tr=5, ticks_per_day=5):
     TD  = {}
 
     for key, value in DFD.items():
+        if key == 'STA':
+            continue
         TD[key], R0D[key] = r0(value, tmax, tr, ticks_per_day)
         AR0D[key] = R0D[key].mean()
     return TD, R0D, AR0D
@@ -51,45 +53,80 @@ def plot_average_I(DFD, F=True, S=True, P=True,
     plt.title(T)
     plt.show()
 
-
-def plot_runs_I(DFD, F=True, S=True, P=True,
-                T='Infected: R0 = 3.5, ti = 5.5, tr = 5', figsize=(8,8)):
+def plot_runs_I(DFD, T='Infected: R0 = 3.5, ti = 5.5, tr = 5',
+                maxlbls = 10, figsize=(12,12)):
     fig = plt.figure(figsize=figsize)
-    ax=plt.subplot(111)
-    ftot =1
-    stot =1
-    ptot =1
-    if F:
-        ftot = DFD['F:average'].NumberOfInfected[0] + DFD['F:average'].NumberOfSusceptible[0]
-    if S:
-        stot = DFD['S:average'].NumberOfInfected[0] + DFD['S:average'].NumberOfSusceptible[0]
-    if P:
-        ptot = DFD['P:average'].NumberOfInfected[0] + DFD['P:average'].NumberOfSusceptible[0]
 
-    for key, value in DFD.items():
-        if key == 'PZ':
-            ds = value
+    dft = DFD['DFT_run_average']
+    ftot = dft.NumberOfInfected[0] + dft.NumberOfSusceptible[0]
+
+    ax=plt.subplot(2,1,1)
+    plt.plot(dft.index, dft.NumberOfInfected/ftot, 'r', lw=2, label='average' )
+    plt.xlabel('time (days)')
+    plt.ylabel('Fraction of Infected')
+    plt.title(T)
+
+    ax=plt.subplot(2,1,2)
 
     i = 0
     for key, value in DFD.items():
-        if key == 'PZ':
+        if key == 'STA':
             continue
-        name = key.split(":")
-        if name[1] != 'average':
-
-            lbl = f'{key}-PZ:{ds[i]*10000:.1f}'
-            if name[0] == 'F' and F:
-                plt.plot(value.index, value.NumberOfInfected/ftot, lw=2, label=lbl  )
-            if name[0] == 'S' and S:
-                plt.plot(value.index, value.NumberOfInfected/stot, lw=2, label=lbl  )
-            if name[0] == 'P' and P:
-                plt.plot(value.index, value.NumberOfInfected/ptot, lw=2, label=lbl  )
+        name = key.split("_")
+        if name[2] != 'average':
+            dft = DFD[key]
             i+=1
+            if i < maxlbls:
+                plt.plot(dft.index, dft.NumberOfInfected/ftot, lw=2, label=key )
+            else:
+                plt.plot(dft.index, dft.NumberOfInfected/ftot, lw=2 )
+
     plt.xlabel('time (days)')
     plt.ylabel('Fraction of Infected')
     plt.legend()
-    plt.title(T)
+
+    plt.tight_layout()
     plt.show()
+
+
+# def plot_runs_I(DFD, F=True, S=True, P=True,
+#                 T='Infected: R0 = 3.5, ti = 5.5, tr = 5', figsize=(8,8)):
+#     fig = plt.figure(figsize=figsize)
+#     ax=plt.subplot(111)
+#     ftot =1
+#     stot =1
+#     ptot =1
+#     if F:
+#         ftot = DFD['F:average'].NumberOfInfected[0] + DFD['F:average'].NumberOfSusceptible[0]
+#     if S:
+#         stot = DFD['S:average'].NumberOfInfected[0] + DFD['S:average'].NumberOfSusceptible[0]
+#     if P:
+#         ptot = DFD['P:average'].NumberOfInfected[0] + DFD['P:average'].NumberOfSusceptible[0]
+#
+#     for key, value in DFD.items():
+#         if key == 'PZ':
+#             ds = value
+#
+#     i = 0
+#     for key, value in DFD.items():
+#         if key == 'PZ':
+#             continue
+#         name = key.split(":")
+#         if name[1] != 'average':
+#
+#             lbl = f'{key}-PZ:{ds[i]*10000:.1f}'
+#             if name[0] == 'F' and F:
+#                 plt.plot(value.index, value.NumberOfInfected/ftot, lw=2, label=lbl  )
+#             if name[0] == 'S' and S:
+#                 plt.plot(value.index, value.NumberOfInfected/stot, lw=2, label=lbl  )
+#             if name[0] == 'P' and P:
+#                 plt.plot(value.index, value.NumberOfInfected/ptot, lw=2, label=lbl  )
+#             i+=1
+#     plt.xlabel('time (days)')
+#     plt.ylabel('Fraction of Infected')
+#     plt.legend()
+#     plt.title(T)
+#     plt.show()
 
 
 def plot_I_E(DFD, F=True, S=True, T=' Infected/Exposed: R0 = 3.5, ti = 5.5, tr = 5',

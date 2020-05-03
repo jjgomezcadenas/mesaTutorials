@@ -110,6 +110,7 @@ def number_of_turtles_in_neighborhood(model):
 
 def get_time(t_dist, t_mean):
     if t_dist == 'E':
+        #print(f'throw exp  scale ={t_mean}')
         return expon.rvs(scale=t_mean)
     elif t_dist == 'G':
         return gamma.rvs(a=t_mean, scale=1.0)
@@ -197,24 +198,6 @@ class BarrioTortugaSEIR(Model):
         self.ti = ti
         self.tr = tr
 
-        # ti (average) and ti_var (variance)
-        # if   self.ti_dist == 'E':
-        #     self.ti, self.ti_var  = expon.stats(scale=ti, moments='mv')
-        # elif self.ti_dist == 'G':
-        #     self.ti, self.ti_var  = gamma.stats(a=ti_shape, scale=1, moments='mv')
-        # else:
-        #     self.ti = ti
-        #     self.ti_var = 0
-
-        # te (average) and ti_var (variance)
-        # if   self.tr_dist == 'E':
-        #     self.tr, self.tr_var  = expon.stats(scale=tr, moments='mv')
-        # elif self.tr_dist == 'G':
-        #     self.tr, self.tr_var  = gamma.stats(a=tr_shape, scale=tr_scale, moments='mv')
-        # else:
-        #     self.tr = tr
-        #     self.tr_var = 0
-
         # Prob
         self.k = 1
         if   self.p_dist == 'S':
@@ -282,6 +265,7 @@ class BarrioTortugaSEIR(Model):
             for i, at in enumerate(A):
                 x,y = self.random_pos()           # random position
                 ti = get_time(self.ti_dist, self.ti)
+                #print(f'from exp  ti ={ti}')
                 tr = get_time(self.tr_dist, self.tr)
                 p  = self.get_prob()
                 self.Ti.append(ti)

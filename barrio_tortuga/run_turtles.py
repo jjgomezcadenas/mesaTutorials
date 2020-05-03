@@ -111,9 +111,10 @@ def run_series(ns=100,
 
         file=f'STA.csv'
         mfile = os.path.join(mdir, file)
-        dfs.groupby(dfs.index).mean().to_csv(mfile, sep=" ")
+        STATS[0].to_csv(mfile, sep=" ")
+        #dfs.groupby(dfs.index).mean().to_csv(mfile, sep=" ")
 
-run_series(ns             = 2,
+run_series(ns             = 10,
            csv            = True,
            steps          = 500,
            fprint         = 25,
@@ -122,7 +123,7 @@ run_series(ns             = 2,
            i0             = 10,
            r0             = 3.5,
            ti             = 5.5,
-           tr             = 8.5,
+           tr             = 6.5,
            ti_dist        = 'F',    # F for fixed, E for exp G for Gamma
            tr_dist        = 'F',
            p_dist         = 'F',    # F for fixed, S for Binomial, P for Poissoin
